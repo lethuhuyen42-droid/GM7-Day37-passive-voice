@@ -1,0 +1,869 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Passive Switch Quest</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+  /* Layout: one centred column, chunky "sticker" cards on a pale sky ground; one screen at a time (start, quiz, result). Quiz card has two steps: find S-V-O, then rewrite the sentence. */
+  :root {
+    --bg: #E4F4FF; --card: #FFFFFF; --field: #FAFDFF; --ink: #16284A; --muted: #4F6184; --line: #C9E1F4;
+    --blue: #1F6FD1; --blue-d: #174F97; --blue-soft: #DCEBFF; --on-blue: #FFFFFF;
+    --sun: #FFC933; --sun-d: #E0A400; --sun-soft: #FFF2C4;
+    --mint: #1FB58A; --mint-d: #0B7556; --mint-soft: #D8F6EA;
+    --coral: #F0524F; --coral-d: #B72B28; --coral-soft: #FFE2E1;
+    --violet: #7B5CE0; --violet-d: #4F36A8; --violet-soft: #E9E2FF;
+    --peach: #F0862F; --peach-d: #9A4B0A; --peach-soft: #FFE6D2;
+    --glow1: #FFE9A0; --glow2: #CBEBFF; --why-bg: #F3F9FF;
+    --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+    --font-body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F1B33; --card: #172646; --field: #0F1B33; --ink: #E8F0FF; --muted: #9FB3D6; --line: #2A3F69;
+      --blue: #5AA2FF; --blue-d: #2F6FC4; --blue-soft: #1D3560; --on-blue: #0B1A33;
+      --sun: #FFC933; --sun-d: #B88A00; --sun-soft: #3A3320;
+      --mint: #2FD0A0; --mint-d: #7BE8C4; --mint-soft: #123D36;
+      --coral: #FF7B78; --coral-d: #FFA5A3; --coral-soft: #4A2427;
+      --violet: #A58BFF; --violet-d: #C9BAFF; --violet-soft: #2E2757;
+      --peach: #FF9F5A; --peach-d: #FFC08F; --peach-soft: #4A3020;
+      --glow1: #3A3320; --glow2: #1A2F55; --why-bg: #12203D;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F1B33; --card: #172646; --field: #0F1B33; --ink: #E8F0FF; --muted: #9FB3D6; --line: #2A3F69;
+    --blue: #5AA2FF; --blue-d: #2F6FC4; --blue-soft: #1D3560; --on-blue: #0B1A33;
+    --sun: #FFC933; --sun-d: #B88A00; --sun-soft: #3A3320;
+    --mint: #2FD0A0; --mint-d: #7BE8C4; --mint-soft: #123D36;
+    --coral: #FF7B78; --coral-d: #FFA5A3; --coral-soft: #4A2427;
+    --violet: #A58BFF; --violet-d: #C9BAFF; --violet-soft: #2E2757;
+    --peach: #FF9F5A; --peach-d: #FFC08F; --peach-soft: #4A3020;
+    --glow1: #3A3320; --glow2: #1A2F55; --why-bg: #12203D;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0; background-color: var(--bg);
+    background-image:
+      radial-gradient(circle at 92% -4%, var(--glow1) 0, var(--glow1) 90px, transparent 91px),
+      radial-gradient(circle at 4% 100%, var(--glow2) 0, var(--glow2) 120px, transparent 121px);
+    background-repeat: no-repeat; color: var(--ink);
+    font-family: var(--font-body); font-size: 17px; line-height: 1.5;
+  }
+  .app { max-width: 720px; margin: 0 auto; padding-block: 18px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  h1, h2, h3 { font-family: var(--font-display); line-height: 1.15; margin: 0; text-wrap: balance; }
+  p { margin: 0; }
+  button { font-family: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; min-height: 44px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+  .brand svg { flex: none; }
+  .tools { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .musicbtn { flex: none; width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink); box-shadow: 0 3px 0 var(--line); padding: 0; transition: transform .08s ease, box-shadow .08s ease; }
+  .musicbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--line); }
+  .musicbtn[aria-pressed="true"] { background: var(--sun); color: #16284A; border-color: var(--sun-d); }
+  .musicbtn svg[hidden] { display: none; }
+  .who { display: flex; align-items: center; gap: 8px; background: var(--card); border: 2px solid var(--line); border-radius: 999px; padding: 4px 14px 4px 4px; font-weight: 800; max-width: 55%; }
+  .who .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .avatar { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--sun); color: #16284A; display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 18px; }
+
+  .card { background: var(--card); border: 2px solid var(--line); border-radius: 22px; box-shadow: 0 6px 0 var(--line); padding: 22px; }
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+
+  .hero h1 { font-size: clamp(34px, 8vw, 48px); font-weight: 800; }
+  .hero h1 .hl { background: linear-gradient(transparent 58%, var(--sun) 58%, var(--sun) 92%, transparent 92%); padding: 0 4px; }
+  .hero .lead { margin-top: 10px; color: var(--muted); font-weight: 600; max-width: 52ch; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin-top: 18px; }
+  .stepbox { border-radius: 16px; padding: 12px 14px; min-width: 0; font-weight: 700; font-size: 15px; }
+  .stepbox b { display: block; font-family: var(--font-display); font-size: 18px; }
+  .stepbox.a { background: var(--blue-soft); }
+  .stepbox.b { background: var(--mint-soft); }
+  .namebox { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+  .namebox label { font-weight: 800; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row input { flex: 1 1 200px; min-width: 0; }
+  input[type="text"] { font: inherit; font-weight: 700; padding: 12px 16px; border-radius: 14px; border: 2px solid var(--line); background: var(--field); color: var(--ink); width: 100%; }
+  input[type="text"]:focus-visible { border-color: var(--blue); outline-offset: 2px; }
+  input[type="text"].ok { border-color: var(--mint); background: var(--mint-soft); color: var(--mint-d); }
+  input[type="text"].no { border-color: var(--coral); background: var(--coral-soft); color: var(--coral-d); }
+  .err { color: var(--coral-d); font-weight: 700; min-height: 1.4em; }
+  .btn { font-family: var(--font-display); font-weight: 700; font-size: 19px; border: 0; border-radius: 14px; padding: 12px 24px; background: var(--blue); color: var(--on-blue); box-shadow: 0 5px 0 var(--blue-d); transition: transform .08s ease, box-shadow .08s ease; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 0 var(--blue-d); }
+  .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--blue-d); }
+  .btn.alt { background: var(--card); color: var(--ink); border: 2px solid var(--line); box-shadow: 0 5px 0 var(--line); padding: 10px 22px; }
+  .btn.alt:active { box-shadow: 0 1px 0 var(--line); }
+  .row .btn { flex: none; }
+
+  .remind h2 { font-size: 22px; }
+  .remind .sub { color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px; }
+  .tile { background: var(--sun-soft); border-radius: 16px; padding: 12px 14px; min-width: 0; }
+  .tile .tag { font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .tile .form { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-top: 2px; overflow-wrap: anywhere; }
+  .tile .ex { margin-top: 4px; font-size: 14px; font-weight: 600; }
+  .rule { margin-top: 14px; background: var(--violet-soft); border-radius: 16px; padding: 12px 14px; font-weight: 700; font-size: 15px; }
+  .rule b { font-family: var(--font-display); font-size: 17px; }
+
+  .meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-weight: 800; }
+  .meta .count { font-family: var(--font-display); font-size: 20px; }
+  .meta .tally { color: var(--mint-d); }
+  .lvl { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 1px 10px; background: var(--sun); color: #16284A; margin-left: 8px; vertical-align: .15em; }
+  .dots { display: flex; gap: 4px; margin-top: 8px; }
+  .dot { flex: 1; height: 10px; border-radius: 99px; background: var(--line); transition: background .2s ease; }
+  .dot.cur { background: var(--sun); }
+  .dot.ok { background: var(--mint); }
+  .dot.no { background: var(--coral); }
+
+  .lab { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; font-weight: 800; color: var(--muted); }
+  .sentence { font-size: clamp(20px, 4.4vw, 25px); font-weight: 700; line-height: 2; margin-top: 4px; overflow-wrap: anywhere; }
+  .seg { display: inline; padding: 1px 7px 2px; border-radius: 9px; border-bottom: 3px solid transparent; margin-inline: 1px; }
+  .seg[data-tag]::after { content: attr(data-tag); font-size: 11px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; vertical-align: super; margin-left: 4px; }
+  .seg.s { background: var(--blue-soft); border-color: var(--blue); }
+  .seg.v { background: var(--sun-soft); border-color: var(--sun); }
+  .seg.o { background: var(--mint-soft); border-color: var(--mint); }
+  .seg.place { background: var(--violet-soft); border-color: var(--violet); }
+  .seg.time { background: var(--peach-soft); border-color: var(--peach); }
+
+  .panel { margin-top: 20px; padding-top: 18px; border-top: 3px dashed var(--line); }
+  .panel h3 { font-size: 19px; }
+  .panel .help { color: var(--muted); font-weight: 600; font-size: 15px; margin-top: 2px; }
+  .frow { margin-top: 14px; }
+  .frow label { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-weight: 800; margin-bottom: 6px; }
+  .frow label small { font-weight: 600; color: var(--muted); font-size: 14px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .badge { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; font-family: var(--font-display); font-weight: 800; color: #16284A; }
+  .badge.s { background: var(--blue-soft); border: 2px solid var(--blue); color: var(--ink); }
+  .badge.v { background: var(--sun); }
+  .badge.o { background: var(--mint-soft); border: 2px solid var(--mint); color: var(--ink); }
+  .corr { margin-top: 4px; font-weight: 800; font-size: 15px; color: var(--mint-d); min-height: 0; }
+  .corr:empty { display: none; }
+  .actions { margin-top: 18px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .fb { font-weight: 800; flex: 1 1 220px; min-width: 0; }
+  .fb.ok { color: var(--mint-d); }
+  .fb.no { color: var(--coral-d); }
+  .answerbox { margin-top: 14px; background: var(--mint-soft); border-radius: 14px; padding: 10px 14px; font-weight: 800; color: var(--mint-d); overflow-wrap: anywhere; }
+  .answerbox .lab { color: var(--mint-d); }
+
+  .score { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .ring { flex: none; width: 160px; height: 160px; border-radius: 50%; border: 12px solid var(--sun); background: var(--sun-soft); display: grid; place-items: center; text-align: center; animation: pop .5s cubic-bezier(.3,1.5,.5,1) both; }
+  .ring .num { font-family: var(--font-display); font-weight: 800; font-size: 52px; line-height: 1; }
+  .ring .den { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--muted); }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .score .copy { flex: 1 1 240px; min-width: 0; }
+  .score h2 { font-size: clamp(26px, 6vw, 34px); font-weight: 800; }
+  .score .stat { margin-top: 6px; color: var(--muted); font-weight: 700; }
+  .score .acts { margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .revhead h2 { font-size: 24px; }
+  .rev { display: flex; flex-direction: column; gap: 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip { display: inline-block; border-radius: 999px; padding: 2px 12px; font-weight: 800; font-size: 14px; }
+  .chip.q { background: var(--ink); color: var(--card); }
+  .chip.rule { background: var(--sun-soft); color: var(--ink); }
+  .chip.fix { background: var(--coral-soft); color: var(--coral-d); }
+  .sentence-vi { margin: -6px 0 2px; font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--muted); opacity: .8; overflow-wrap: anywhere; }
+  .rev .sentence { font-size: 19px; }
+  .rev .sentence-vi { font-size: 13.5px; margin-bottom: 6px; }
+  .cmp { display: flex; flex-direction: column; gap: 6px; font-weight: 700; font-size: 16px; }
+  .cmp .line { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; }
+  .cmp .k { font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 800; min-width: 98px; }
+  .pill { border-radius: 10px; padding: 1px 10px; overflow-wrap: anywhere; }
+  .pill.no { background: var(--coral-soft); color: var(--coral-d); text-decoration: line-through; }
+  .pill.ok { background: var(--mint-soft); color: var(--mint-d); }
+  .toks { display: inline; }
+  .tok { display: inline-block; margin-right: 5px; }
+  .tok.bad { background: var(--coral-soft); color: var(--coral-d); border-radius: 6px; padding: 0 5px; text-decoration: line-through; }
+  .why { background: var(--why-bg); border-left: 6px solid var(--blue); border-radius: 6px 14px 14px 6px; padding: 12px 14px; }
+  .why .lab { color: var(--blue); }
+  .why p { margin-top: 2px; font-weight: 600; }
+  .perfect { text-align: center; }
+  .perfect h2 { font-size: 26px; }
+  .perfect p { margin-top: 6px; color: var(--muted); font-weight: 600; }
+
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    .card { padding: 18px; }
+    .ring { width: 132px; height: 132px; border-width: 10px; }
+    .ring .num { font-size: 42px; }
+    .who { max-width: 52%; }
+    .cmp .k { min-width: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true">
+        <circle cx="20" cy="20" r="17" style="fill:var(--sun)"></circle>
+        <path d="M11 17h15l-4-4M29 23H14l4 4" style="stroke:#16284A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+      </svg>
+      <span>Passive Switch Quest</span>
+    </div>
+    <div class="tools">
+      <div class="who" id="who" hidden><span class="avatar" id="avatar">A</span><span class="name" id="whoName"></span></div>
+      <button class="musicbtn" id="musicBtn" type="button" aria-pressed="true" aria-label="Turn music off">
+        <svg id="icoOn" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"></path><path d="M16.5 9a4.5 4.5 0 010 6M19 6.5a8 8 0 010 11"></path></svg>
+        <svg id="icoOff" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"></path><path d="M17 9.5l5 5M22 9.5l-5 5"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section id="screen-start" class="stack">
+      <div class="card hero">
+        <h1>Ready to <span class="hl">switch</span>?</h1>
+        <p class="lead">20 active sentences, from easy to expert. For each one you work in two steps. Score out of 10 comes from your passive sentences, and every mistake is explained at the end.</p>
+        <div class="steps">
+          <div class="stepbox a"><b>Step 1</b>Find S, V and O in the active sentence.</div>
+          <div class="stepbox b"><b>Step 2</b>Rewrite the whole sentence in the passive voice.</div>
+        </div>
+        <form class="namebox" id="nameForm" novalidate>
+          <label for="nameInput">What is your name?</label>
+          <div class="row">
+            <input id="nameInput" type="text" maxlength="24" autocomplete="given-name" placeholder="Type your name here">
+            <button class="btn" type="submit">Start the quiz</button>
+          </div>
+          <p class="err" id="nameErr" role="alert"></p>
+        </form>
+      </div>
+
+      <div class="card remind">
+        <h2>Quick reminder: active to passive</h2>
+        <p class="sub">The object (O) becomes the new subject. The verb becomes be + V3/ed. The old subject (S) moves to by + S.</p>
+        <div class="tiles">
+          <div class="tile"><div class="tag">Present simple</div><div class="form">am/is/are + V3</div><div class="ex">Tom paints it. → It is painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Present continuous</div><div class="form">am/is/are + being + V3</div><div class="ex">It is being painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Present perfect</div><div class="form">has/have + been + V3</div><div class="ex">It has been painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Past simple</div><div class="form">was/were + V3</div><div class="ex">It was painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Past continuous</div><div class="form">was/were + being + V3</div><div class="ex">It was being painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Future simple</div><div class="form">will + be + V3</div><div class="ex">It will be painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Be going to</div><div class="form">am/is/are going to + be + V3</div><div class="ex">It is going to be painted by Tom.</div></div>
+          <div class="tile"><div class="tag">Modal verbs</div><div class="form">can / should / must / may / had better + be + V3</div><div class="ex">It can be painted by Tom.</div></div>
+        </div>
+        <div class="rule"><b>Word order:</b> place → by + S → time. Example: The tombstones were restored in the courtyard by the craftsmen last year.</div>
+      </div>
+    </section>
+
+    <section id="screen-quiz" class="stack" hidden>
+      <div>
+        <div class="meta"><span><span class="count" id="count">Question 1 of 20</span><span class="lvl" id="lvl">Warm-up</span></span><span class="tally" id="tally">0 correct</span></div>
+        <div class="dots" id="dots" aria-hidden="true"></div>
+      </div>
+      <div class="card">
+        <div class="lab">Active sentence</div>
+        <div id="sentenceBox"></div>
+
+        <form class="panel" id="svoForm" novalidate>
+          <h3>Step 1 · Find S, V and O</h3>
+          <p class="help">Copy each part from the sentence. Do not include place or time words.</p>
+          <div class="frow">
+            <label for="inS"><span class="badge s">S</span> Subject <small>who or what does the action</small></label>
+            <input id="inS" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+            <div class="corr" id="corS"></div>
+          </div>
+          <div class="frow">
+            <label for="inV"><span class="badge v">V</span> Verb <small>the whole verb phrase, with helpers like will, is, can</small></label>
+            <input id="inV" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+            <div class="corr" id="corV"></div>
+          </div>
+          <div class="frow">
+            <label for="inO"><span class="badge o">O</span> Object <small>who or what receives the action</small></label>
+            <input id="inO" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+            <div class="corr" id="corO"></div>
+          </div>
+          <div class="actions">
+            <button class="btn" type="submit" id="svoBtn">Check S, V, O</button>
+            <p class="fb" id="svoFb" aria-live="polite"></p>
+          </div>
+        </form>
+
+        <form class="panel" id="passForm" novalidate hidden>
+          <h3>Step 2 · Rewrite in the passive</h3>
+          <p class="help">Write the whole sentence, from the new subject to the final word.</p>
+          <div class="frow">
+            <label for="inP" class="sr">Passive sentence</label>
+            <input id="inP" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Type the whole passive sentence here">
+          </div>
+          <div id="answerBox"></div>
+          <div class="actions">
+            <button class="btn" type="submit" id="passBtn">Check sentence</button>
+            <p class="fb" id="passFb" aria-live="polite"></p>
+            <button class="btn" type="button" id="nextBtn" hidden>Next</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="screen-result" class="stack" hidden>
+      <div class="card score">
+        <div class="ring"><div><div class="num" id="scoreNum">0</div><div class="den">/ 10</div></div></div>
+        <div class="copy">
+          <h2 id="resTitle"></h2>
+          <p class="stat" id="resStat"></p>
+          <p class="stat" id="resStat2"></p>
+          <div class="acts">
+            <button class="btn" id="againBtn" type="button">Play again</button>
+            <button class="btn alt" id="renameBtn" type="button">Change name</button>
+          </div>
+        </div>
+      </div>
+      <div class="revhead"><h2 id="revTitle">Review your mistakes</h2></div>
+      <div class="stack" id="review"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var QUESTIONS = [
+    { lvl: "Warm-up", tense: "Present simple", rule: "am/is/are + V3",
+      vi: "Du khách tham quan Văn Miếu mỗi ngày.",
+      parts: [["Tourists","s"],["visit","v"],["the Temple of Literature","o"],["every day","time"]],
+      ans: ["The Temple of Literature is visited by tourists every day."],
+      why: "“Every day” cho biết thì hiện tại đơn. Bước 1: S = Tourists, V = visit, O = the Temple of Literature. Bước 2: O lên làm chủ ngữ (số ít nên dùng is), động từ thành is visited, S cũ đứng sau by, và “every day” đứng cuối câu." },
+    { lvl: "Warm-up", tense: "Past simple", rule: "was/were + V3",
+      vi: "Vua Lý Nhân Tông thành lập Quốc Tử Giám vào năm 1076.",
+      parts: [["Emperor Ly Nhan Tong","s"],["founded","v"],["the Imperial Academy","o"],["in 1076","time"]],
+      ans: ["The Imperial Academy was founded by Emperor Ly Nhan Tong in 1076."],
+      why: "“In 1076” là mốc quá khứ nên dùng quá khứ đơn. Bước 1: S = Emperor Ly Nhan Tong, V = founded, O = the Imperial Academy. Bước 2: O làm chủ ngữ, dùng was + founded (V3 của found là founded), rồi by Emperor Ly Nhan Tong, cuối cùng là “in 1076”." },
+    { lvl: "Warm-up", tense: "Future simple", rule: "will + be + V3",
+      vi: "Bảo tàng sẽ trưng bày các cổ vật vào tháng sau.",
+      parts: [["The museum","s"],["will display","v"],["the ancient relics","o"],["next month","time"]],
+      ans: ["The ancient relics will be displayed by the museum next month."],
+      why: "“Next month” là dấu hiệu tương lai đơn. Bước 1: S = The museum, V = will display, O = the ancient relics. Bước 2: will + V thành will be + V3, tức là will be displayed. Thứ tự: by the museum rồi mới đến “next month”." },
+    { lvl: "Warm-up", tense: "Present continuous", rule: "am/is/are + being + V3",
+      vi: "Công nhân đang trộn xi măng vào lúc này.",
+      parts: [["Workers","s"],["are mixing","v"],["cement","o"],["at the moment","time"]],
+      ans: ["Cement is being mixed by workers at the moment."],
+      why: "“At the moment” cho biết thì hiện tại tiếp diễn. Bước 1: S = Workers, V = are mixing, O = cement. Bước 2: am/is/are + V-ing thành am/is/are + being + V3. “Cement” là danh từ không đếm được nên dùng is being mixed, sau đó là by workers và at the moment." },
+    { lvl: "Warm-up", tense: "Present perfect", rule: "has/have + been + V3",
+      vi: "Thành phố đã sửa chữa chùa Một Cột hai lần.",
+      parts: [["The city","s"],["has repaired","v"],["the One Pillar pagoda","o"],["twice","time"]],
+      ans: ["The One Pillar pagoda has been repaired by the city twice."],
+      why: "“Twice” (hai lần) đi với hiện tại hoàn thành. Bước 1: S = The city, V = has repaired, O = the One Pillar pagoda. Bước 2: has/have + V3 thành has/have + been + V3. O số ít nên dùng has been repaired, rồi by the city, cuối câu là twice." },
+
+    { lvl: "Level up", tense: "Past continuous", rule: "was/were + being + V3",
+      vi: "Các công nhân đang sơn Khuê Văn Các lúc 8 giờ sáng hôm qua.",
+      parts: [["The workers","s"],["were painting","v"],["Khue Van Pavilion","o"],["at 8 a.m. yesterday","time"]],
+      ans: ["Khue Van Pavilion was being painted by the workers at 8 a.m. yesterday."],
+      why: "“At 8 a.m. yesterday” là một thời điểm cụ thể trong quá khứ nên dùng quá khứ tiếp diễn. Bước 1: S = The workers, V = were painting, O = Khue Van Pavilion. Bước 2: was/were + V-ing thành was/were + being + V3. O số ít nên dùng was being painted, rồi by the workers, cuối cùng là cụm thời gian." },
+    { lvl: "Level up", tense: "Be going to (planned future)", rule: "am/is/are going to + be + V3",
+      vi: "Chính phủ sẽ xây dựng một trung tâm văn hóa mới vào năm sau.",
+      parts: [["The government","s"],["is going to construct","v"],["a new cultural centre","o"],["next year","time"]],
+      ans: ["A new cultural centre is going to be constructed by the government next year."],
+      why: "“Is going to” diễn tả dự định trong tương lai. Bước 1: S = The government, V = is going to construct, O = a new cultural centre. Bước 2: am/is/are going to + V thành am/is/are going to + be + V3. O số ít nên dùng is going to be constructed, theo sau là by the government và next year." },
+    { lvl: "Level up", tense: "Modal verb (can)", rule: "can + be + V3",
+      vi: "Hướng dẫn viên có thể chia chuyến tham quan thành ba phần.",
+      parts: [["A guide","s"],["can divide","v"],["the tour","o"],["into three parts","x"]],
+      ans: ["The tour can be divided into three parts by a guide."],
+      why: "Câu có động từ khuyết thiếu can. Bước 1: S = A guide, V = can divide, O = the tour. Cụm “into three parts” đi kèm divide (chia thành) và không phải trạng từ nơi chốn. Bước 2: can + V thành can + be + V3, tức là can be divided into three parts, rồi by a guide ở cuối câu." },
+    { lvl: "Level up", tense: "Modal verb (should) + place", rule: "should + be + V3",
+      vi: "Nhà trường nên tổ chức kỳ thi ở hội trường chính.",
+      parts: [["The school","s"],["should hold","v"],["the examination","o"],["in the main hall","place"]],
+      ans: ["The examination should be held in the main hall by the school."],
+      why: "Câu có động từ khuyết thiếu should. Bước 1: S = The school, V = should hold, O = the examination. Bước 2: should + V thành should + be + V3, tức là should be held. Trạng từ nơi chốn “in the main hall” đứng trước by the school." },
+    { lvl: "Level up", tense: "Modal verb (may) + place + time", rule: "may + be + V3",
+      vi: "Các thợ thủ công địa phương có thể phục chế những tấm bia ở sân trong vào mùa hè này.",
+      parts: [["Local craftsmen","s"],["may restore","v"],["the tombstones","o"],["in the courtyard","place"],["this summer","time"]],
+      ans: ["The tombstones may be restored in the courtyard by local craftsmen this summer."],
+      why: "Bước 1: S = Local craftsmen, V = may restore, O = the tombstones. Bước 2: may + V thành may + be + V3, tức là may be restored. Thứ tự đúng là nơi chốn → by + S → thời gian: in the courtyard, by local craftsmen, this summer." },
+
+    { lvl: "Challenge", tense: "Present simple (negative)", rule: "am/is/are + not + V3",
+      vi: "Người phụ trách bảo tàng không trưng bày những cổ vật lâu đời nhất ở phòng triển lãm phía đông vào các ngày trong tuần.",
+      parts: [["The curator","s"],["doesn't display","v"],["the oldest relics","o"],["in the east gallery","place"],["on weekdays","time"]],
+      ans: ["The oldest relics aren't displayed in the east gallery by the curator on weekdays.", "The oldest relics are not displayed in the east gallery by the curator on weekdays."],
+      why: "“On weekdays” (thói quen) cho biết hiện tại đơn, và câu ở dạng phủ định. Bước 1: S = The curator, V = doesn't display, O = the oldest relics. Bước 2: doesn't/don't + V thành am/is/are + not + V3. O số nhiều nên dùng aren't displayed. Thứ tự: in the east gallery, by the curator, on weekdays." },
+    { lvl: "Challenge", tense: "Past simple", rule: "was/were + V3",
+      vi: "Hàng nghìn du khách đã chứng kiến buổi lễ tại Văn Miếu vào Chủ nhật tuần trước.",
+      parts: [["Thousands of visitors","s"],["witnessed","v"],["the ceremony","o"],["in the Temple of Literature","place"],["last Sunday","time"]],
+      ans: ["The ceremony was witnessed in the Temple of Literature by thousands of visitors last Sunday."],
+      why: "“Last Sunday” cho biết quá khứ đơn. Bước 1: S = Thousands of visitors, V = witnessed (chứng kiến), O = the ceremony. Bước 2: O số ít nên dùng was witnessed. Nơi chốn đứng trước by, thời gian đứng cuối: in the Temple of Literature, by thousands of visitors, last Sunday." },
+    { lvl: "Challenge", tense: "Modal expression (had better)", rule: "had better + be + V3",
+      vi: "Nhân viên nên dọn dẹp Nhà hát Lớn trước 7 giờ tối.",
+      parts: [["The staff","s"],["had better clean","v"],["the Opera House","o"],["before 7 p.m.","time"]],
+      ans: ["The Opera House had better be cleaned by the staff before 7 p.m."],
+      why: "“Had better + V” (nên làm gì) hoạt động như một động từ khuyết thiếu và không đổi dạng. Bước 1: S = The staff, V = had better clean, O = the Opera House. Bước 2: had better + be + V3, tức là had better be cleaned, rồi by the staff và before 7 p.m." },
+    { lvl: "Challenge", tense: "Past simple", rule: "was/were + V3",
+      vi: "Nhà Nguyễn đã xây dựng Khuê Văn Các trong Văn Miếu vào đầu thế kỷ 19.",
+      parts: [["The Nguyen dynasty","s"],["constructed","v"],["Khue Van Pavilion","o"],["in the Temple of Literature","place"],["in the early nineteenth century","time"]],
+      ans: ["Khue Van Pavilion was constructed in the Temple of Literature by the Nguyen dynasty in the early nineteenth century."],
+      why: "Cụm “in the early nineteenth century” là thời điểm trong quá khứ nên dùng quá khứ đơn. Bước 1: S = The Nguyen dynasty, V = constructed, O = Khue Van Pavilion. Bước 2: was constructed. Thứ tự: in the Temple of Literature (nơi chốn), by the Nguyen dynasty, rồi in the early nineteenth century (thời gian)." },
+    { lvl: "Challenge", tense: "Present perfect", rule: "has/have + been + V3",
+      vi: "Người dân địa phương đã bảo vệ di sản văn hóa ở khu phố cổ suốt nhiều năm.",
+      parts: [["Local people","s"],["have protected","v"],["the cultural heritage","o"],["in the old quarter","place"],["for many years","time"]],
+      ans: ["The cultural heritage has been protected in the old quarter by local people for many years."],
+      why: "“For many years” đi với hiện tại hoàn thành. Bước 1: S = Local people, V = have protected, O = the cultural heritage. Bước 2: has/have + been + V3. O là “the cultural heritage” (số ít) nên dùng has been protected. Thứ tự: in the old quarter, by local people, for many years." },
+
+    { lvl: "Expert", tense: "Present continuous", rule: "am/is/are + being + V3",
+      vi: "Một kiến trúc sư tài ba đang thiết kế một trung tâm văn hóa mới ở Hà Nội trong năm nay.",
+      parts: [["A brilliant architect","s"],["is designing","v"],["a new cultural centre","o"],["in Hanoi","place"],["this year","time"]],
+      ans: ["A new cultural centre is being designed in Hanoi by a brilliant architect this year."],
+      why: "“This year” cùng với is designing cho thấy hành động đang diễn ra, nên dùng hiện tại tiếp diễn. Bước 1: S = A brilliant architect, V = is designing, O = a new cultural centre. Bước 2: is + being + V3, tức là is being designed. Thứ tự: in Hanoi, by a brilliant architect, this year." },
+    { lvl: "Expert", tense: "Future simple", rule: "will + be + V3",
+      vi: "Chính phủ sẽ ghi nhận kiến trúc sư trẻ tại Nhà hát Lớn vào thứ Sáu tuần sau.",
+      parts: [["The government","s"],["will recognize","v"],["the young architect","o"],["at the Opera House","place"],["next Friday","time"]],
+      ans: ["The young architect will be recognized at the Opera House by the government next Friday.", "The young architect will be recognised at the Opera House by the government next Friday."],
+      why: "“Next Friday” là dấu hiệu tương lai đơn. Bước 1: S = The government, V = will recognize (công nhận), O = the young architect. Bước 2: will + be + V3, tức là will be recognized. Thứ tự: at the Opera House (nơi chốn), by the government, next Friday (thời gian)." },
+    { lvl: "Expert", tense: "Past continuous", rule: "was/were + being + V3",
+      vi: "Nhân viên bảo tàng đang trưng bày các cổ vật trong phòng triển lãm mới lúc 9 giờ sáng hôm qua.",
+      parts: [["The museum staff","s"],["were displaying","v"],["the ancient relics","o"],["in the new gallery","place"],["at 9 a.m. yesterday","time"]],
+      ans: ["The ancient relics were being displayed in the new gallery by the museum staff at 9 a.m. yesterday."],
+      why: "“At 9 a.m. yesterday” là một thời điểm trong quá khứ nên dùng quá khứ tiếp diễn. Bước 1: S = The museum staff, V = were displaying, O = the ancient relics. Bước 2: O số nhiều nên dùng were being displayed. Thứ tự: in the new gallery, by the museum staff, at 9 a.m. yesterday." },
+    { lvl: "Expert", tense: "Present simple with regard … as", rule: "am/is/are + V3 + as …",
+      vi: "Ngày nay, các nhà sử học coi Quốc Tử Giám là trường đại học quốc gia đầu tiên của Việt Nam.",
+      parts: [["Historians","s"],["regard","v"],["the Imperial Academy","o"],["as the first national university of Vietnam","x"],["nowadays","time"]],
+      ans: ["The Imperial Academy is regarded as the first national university of Vietnam by historians nowadays."],
+      why: "“Nowadays” cho biết hiện tại đơn. Cấu trúc regard sb/sth as sb/sth giữ nguyên “as” khi chuyển bị động. Bước 1: S = Historians, V = regard, O = the Imperial Academy. Bước 2: is regarded as the first national university of Vietnam, rồi by historians, cuối cùng là nowadays." },
+    { lvl: "Expert", tense: "Modal verb (must)", rule: "must + be + V3",
+      vi: "Hội đồng thành phố phải bảo vệ những cổ vật quan trọng ở thủ đô trong năm nay.",
+      parts: [["The city council","s"],["must protect","v"],["the significant relics","o"],["in the capital","place"],["this year","time"]],
+      ans: ["The significant relics must be protected in the capital by the city council this year."],
+      why: "Câu có động từ khuyết thiếu must. Bước 1: S = The city council, V = must protect, O = the significant relics. Bước 2: must + V thành must + be + V3, tức là must be protected. Thứ tự: in the capital, by the city council, this year." }
+  ];
+
+  var TAGS = { s: "S", v: "V", o: "O", place: "place", time: "time" };
+  var KEY = "passive-switch-quest-name";
+  var total = QUESTIONS.length;
+  var CONTR = { "aren't": "are not", "isn't": "is not", "wasn't": "was not", "weren't": "were not", "hasn't": "has not", "haven't": "have not", "doesn't": "does not", "don't": "do not", "didn't": "did not", "won't": "will not", "can't": "can not", "couldn't": "could not", "shouldn't": "should not", "mustn't": "must not" };
+
+  QUESTIONS.forEach(function (q) {
+    q.exp = { s: "", v: "", o: [], x: "" };
+    q.parts.forEach(function (p, i) {
+      if (p[1] === "s") q.exp.s = p[0];
+      if (p[1] === "v") q.exp.v = p[0];
+      if (p[1] === "o") {
+        q.exp.o = [p[0]];
+        var nx = q.parts[i + 1];
+        if (nx && nx[1] === "x") q.exp.o.push(p[0] + " " + nx[0]);
+      }
+    });
+  });
+
+  var state = { name: "", idx: 0, svoDone: false, passDone: false, rec: [] };
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+  function loadName() { try { return localStorage.getItem(KEY) || ""; } catch (e) { return ""; } }
+  function saveName(v) { try { localStorage.setItem(KEY, v); } catch (e) {} }
+  function show(which) {
+    ["start", "quiz", "result"].forEach(function (s) { $("screen-" + s).hidden = (s !== which); });
+    $("who").hidden = !state.name || which === "start";
+    window.scrollTo(0, 0);
+  }
+
+  function norm(s) {
+    s = String(s).toLowerCase().replace(/[’‘`]/g, "'");
+    s = s.replace(/\b[a-z]+n't\b/g, function (m) { return CONTR[m] || m; });
+    s = s.replace(/centre/g, "center").replace(/recognis/g, "recogniz");
+    s = s.replace(/\./g, "").replace(/[,;:!?"“”]/g, " ");
+    return s.replace(/\s+/g, " ").trim();
+  }
+  function noArt(s) { return norm(s).replace(/^(the|a|an) /, ""); }
+  function sameSvo(given, expected) {
+    var list = Array.isArray(expected) ? expected : [expected];
+    var g = noArt(given);
+    return list.some(function (e) { return noArt(e) === g; });
+  }
+  function samePassive(given, q) {
+    var g = norm(given);
+    return q.ans.some(function (a) { return norm(a) === g; });
+  }
+  function diffTokens(given, correct) {
+    var a = norm(given).split(" "), b = norm(correct).split(" ");
+    var m = a.length, n = b.length, i, j, dp = [];
+    for (i = 0; i <= m; i++) { dp.push([]); for (j = 0; j <= n; j++) dp[i].push(0); }
+    for (i = m - 1; i >= 0; i--) for (j = n - 1; j >= 0; j--) {
+      dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+    var bad = a.map(function () { return true; });
+    i = 0; j = 0;
+    while (i < m && j < n) {
+      if (a[i] === b[j]) { bad[i] = false; i++; j++; }
+      else if (dp[i + 1][j] >= dp[i][j + 1]) i++;
+      else j++;
+    }
+    return a.map(function (t, k) { return { t: t, bad: bad[k] }; });
+  }
+
+  function buildSentence(q, colored) {
+    var wrap = el("div", "sentence-wrap");
+    var p = el("p", "sentence");
+    wrap.appendChild(p);
+    if (q.vi) wrap.appendChild(el("p", "sentence-vi", q.vi));
+    q.parts.forEach(function (pt, i) {
+      if (colored) {
+        var sp = el("span", "seg " + pt[1], pt[0]);
+        if (TAGS[pt[1]]) sp.setAttribute("data-tag", TAGS[pt[1]]);
+        p.appendChild(sp);
+      } else {
+        p.appendChild(document.createTextNode(pt[0]));
+      }
+      if (i < q.parts.length - 1) p.appendChild(document.createTextNode(" "));
+    });
+    p.appendChild(document.createTextNode("."));
+    return wrap;
+  }
+
+  function tallyCounts() {
+    var c = 0;
+    state.rec.forEach(function (r) { if (r && r.passOk) c++; });
+    return c;
+  }
+  function renderDots() {
+    var d = $("dots");
+    d.innerHTML = "";
+    for (var i = 0; i < total; i++) {
+      var cls = "dot";
+      if (state.rec[i] && state.rec[i].passDone) cls += state.rec[i].passOk ? " ok" : " no";
+      else if (i === state.idx) cls += " cur";
+      d.appendChild(el("span", cls));
+    }
+  }
+
+  function setupStart() {
+    state.name = "";
+    $("nameInput").value = loadName();
+    $("nameErr").textContent = "";
+    show("start");
+  }
+  function beginGame() {
+    state.idx = 0;
+    state.rec = [];
+    $("who").hidden = false;
+    renderQuestion();
+    show("quiz");
+  }
+
+  function resetInputs() {
+    ["inS", "inV", "inO", "inP"].forEach(function (id) {
+      var i = $(id);
+      i.value = "";
+      i.readOnly = false;
+      i.className = "";
+    });
+    ["corS", "corV", "corO"].forEach(function (id) { $(id).textContent = ""; });
+  }
+
+  function renderQuestion() {
+    var q = QUESTIONS[state.idx];
+    state.svoDone = false;
+    state.passDone = false;
+    $("count").textContent = "Question " + (state.idx + 1) + " of " + total;
+    $("lvl").textContent = q.lvl;
+    $("tally").textContent = tallyCounts() + " correct";
+    renderDots();
+    var box = $("sentenceBox");
+    box.innerHTML = "";
+    box.appendChild(buildSentence(q, false));
+    resetInputs();
+    $("svoFb").textContent = "";
+    $("svoFb").className = "fb";
+    $("svoBtn").hidden = false;
+    $("passForm").hidden = true;
+    $("passFb").textContent = "";
+    $("passFb").className = "fb";
+    $("answerBox").innerHTML = "";
+    $("passBtn").hidden = false;
+    $("nextBtn").hidden = true;
+    try { $("inS").focus({ preventScroll: true }); } catch (e) { $("inS").focus(); }
+  }
+
+  function checkSvo() {
+    if (state.svoDone) return;
+    var q = QUESTIONS[state.idx];
+    var vals = { s: $("inS").value, v: $("inV").value, o: $("inO").value };
+    if (!vals.s.trim() || !vals.v.trim() || !vals.o.trim()) {
+      $("svoFb").className = "fb no";
+      $("svoFb").textContent = "Fill in S, V and O before you check.";
+      return;
+    }
+    var ok = {
+      s: sameSvo(vals.s, q.exp.s),
+      v: sameSvo(vals.v, q.exp.v),
+      o: sameSvo(vals.o, q.exp.o)
+    };
+    state.svoDone = true;
+    var rec = state.rec[state.idx] = { svo: vals, svoOk: ok.s && ok.v && ok.o, okParts: ok, pass: "", passOk: false, passDone: false };
+    var map = { s: ["inS", "corS", q.exp.s], v: ["inV", "corV", q.exp.v], o: ["inO", "corO", q.exp.o[0]] };
+    Object.keys(map).forEach(function (k) {
+      var inp = $(map[k][0]);
+      inp.readOnly = true;
+      inp.className = ok[k] ? "ok" : "no";
+      if (!ok[k]) $(map[k][1]).textContent = "Correct: " + map[k][2];
+    });
+    var nGood = (ok.s ? 1 : 0) + (ok.v ? 1 : 0) + (ok.o ? 1 : 0);
+    var fb = $("svoFb");
+    fb.className = "fb " + (rec.svoOk ? "ok" : "no");
+    fb.textContent = rec.svoOk ? "S, V and O are all correct. Now switch to the passive." : nGood + " of 3 correct. Check the right answers, then switch to the passive.";
+    $("svoBtn").hidden = true;
+
+    var box = $("sentenceBox");
+    box.innerHTML = "";
+    box.appendChild(buildSentence(q, true));
+    $("passForm").hidden = false;
+    try { $("inP").focus({ preventScroll: true }); } catch (e) { $("inP").focus(); }
+  }
+
+  function checkPassive() {
+    if (state.passDone) return;
+    var q = QUESTIONS[state.idx];
+    var raw = $("inP").value;
+    if (!raw.trim()) {
+      $("passFb").className = "fb no";
+      $("passFb").textContent = "Type your passive sentence first.";
+      return;
+    }
+    var good = samePassive(raw, q);
+    var rec = state.rec[state.idx];
+    rec.pass = raw.trim();
+    rec.passOk = good;
+    rec.passDone = true;
+    state.passDone = true;
+    $("inP").readOnly = true;
+    $("inP").className = good ? "ok" : "no";
+    var fb = $("passFb");
+    fb.className = "fb " + (good ? "ok" : "no");
+    fb.textContent = good ? "Correct! Nice switch, " + state.name + "." : "Not quite, " + state.name + ". Compare with the model sentence.";
+    var ab = $("answerBox");
+    ab.innerHTML = "";
+    if (!good) {
+      var bx = el("div", "answerbox");
+      bx.appendChild(el("div", "lab", "Model answer"));
+      bx.appendChild(el("div", "", q.ans[0]));
+      ab.appendChild(bx);
+    }
+    $("tally").textContent = tallyCounts() + " correct";
+    renderDots();
+    $("passBtn").hidden = true;
+    var nb = $("nextBtn");
+    nb.textContent = state.idx === total - 1 ? "See my result" : "Next";
+    nb.hidden = false;
+    nb.focus();
+  }
+
+  function next() {
+    if (state.idx >= total - 1) { showResult(); return; }
+    state.idx++;
+    renderQuestion();
+  }
+
+  function showResult() {
+    var passC = 0, svoC = 0;
+    state.rec.forEach(function (r) { if (r.passOk) passC++; if (r.svoOk) svoC++; });
+    var score = Math.round(passC * 10 / total * 10) / 10;
+    $("scoreNum").textContent = String(score);
+    var title;
+    if (score >= 9) title = "Outstanding, " + state.name + "!";
+    else if (score >= 7) title = "Great job, " + state.name + "!";
+    else if (score >= 5) title = "Good effort, " + state.name + "!";
+    else title = "Keep going, " + state.name + "!";
+    $("resTitle").textContent = title;
+    $("resStat").textContent = "Passive sentences: " + passC + " of " + total + " correct.";
+    $("resStat2").textContent = "S, V, O fully correct: " + svoC + " of " + total + " questions.";
+
+    var rv = $("review");
+    rv.innerHTML = "";
+    var shown = 0;
+    QUESTIONS.forEach(function (q, i) {
+      var r = state.rec[i];
+      if (r.passOk && r.svoOk) return;
+      shown++;
+      var card = el("article", "card rev");
+      var chips = el("div", "chips");
+      chips.appendChild(el("span", "chip q", "Question " + (i + 1)));
+      chips.appendChild(el("span", "chip rule", q.tense));
+      if (!r.svoOk) chips.appendChild(el("span", "chip fix", "S, V, O to fix"));
+      if (!r.passOk) chips.appendChild(el("span", "chip fix", "Passive to fix"));
+      card.appendChild(chips);
+      card.appendChild(buildSentence(q, true));
+
+      var cmp = el("div", "cmp");
+      if (!r.svoOk) {
+        var labels = { s: "Subject", v: "Verb", o: "Object" };
+        ["s", "v", "o"].forEach(function (k) {
+          if (r.okParts[k]) return;
+          var line = el("div", "line");
+          line.appendChild(el("span", "k", labels[k]));
+          line.appendChild(el("span", "pill no", r.svo[k]));
+          line.appendChild(el("span", "pill ok", k === "o" ? q.exp.o[0] : q.exp[k]));
+          cmp.appendChild(line);
+        });
+      }
+      if (!r.passOk) {
+        var l1 = el("div", "line");
+        l1.appendChild(el("span", "k", "Your sentence"));
+        var tk = el("span", "toks");
+        diffTokens(r.pass, q.ans[0]).forEach(function (d) { tk.appendChild(el("span", "tok" + (d.bad ? " bad" : ""), d.t)); });
+        l1.appendChild(tk);
+        cmp.appendChild(l1);
+        var l2 = el("div", "line");
+        l2.appendChild(el("span", "k", "Model answer"));
+        l2.appendChild(el("span", "pill ok", q.ans[0]));
+        cmp.appendChild(l2);
+      }
+      card.appendChild(cmp);
+
+      var why = el("div", "why");
+      why.appendChild(el("div", "lab", "Explanation · " + q.rule));
+      why.appendChild(el("p", "", q.why));
+      card.appendChild(why);
+      rv.appendChild(card);
+    });
+    if (!shown) {
+      $("revTitle").textContent = "Review";
+      var perfect = el("div", "card perfect");
+      perfect.appendChild(el("h2", "", "Perfect round!"));
+      perfect.appendChild(el("p", "", "Every S, V, O and every passive sentence was right. There is nothing to review."));
+      rv.appendChild(perfect);
+    } else {
+      $("revTitle").textContent = "Review your mistakes (" + shown + (shown === 1 ? " question)" : " questions)");
+    }
+    show("result");
+  }
+
+  $("nameForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var v = $("nameInput").value.replace(/\s+/g, " ").trim();
+    if (!v) {
+      $("nameErr").textContent = "Please type your name to start.";
+      $("nameInput").focus();
+      return;
+    }
+    state.name = v;
+    saveName(v);
+    $("avatar").textContent = v.charAt(0).toUpperCase();
+    $("whoName").textContent = v;
+    startMusic();
+    beginGame();
+  });
+  $("nameInput").addEventListener("input", function () { $("nameErr").textContent = ""; });
+  $("svoForm").addEventListener("submit", function (e) { e.preventDefault(); checkSvo(); });
+  $("passForm").addEventListener("submit", function (e) { e.preventDefault(); checkPassive(); });
+  $("inS").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("inV").focus(); } });
+  $("inV").addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("inO").focus(); } });
+  $("nextBtn").addEventListener("click", next);
+  $("againBtn").addEventListener("click", beginGame);
+  $("renameBtn").addEventListener("click", function () {
+    var keep = state.name;
+    setupStart();
+    $("nameInput").value = keep;
+    $("nameInput").focus();
+    $("nameInput").select();
+  });
+
+  /* Background music: an original upbeat chiptune loop made with the Web Audio API (no audio files). */
+  var MUSIC_KEY = "passive-switch-quest-music";
+  var music = { on: true, ctx: null, master: null, noise: null, timer: null, step: 0, next: 0, started: false };
+  try { if (localStorage.getItem(MUSIC_KEY) === "off") music.on = false; } catch (e) {}
+  var EIGHTH = 60 / 124 / 2;
+  var MELODY = [
+    76,79,76,72,76,79,84,79,   81,0,76,81,84,81,76,72,   77,81,84,81,77,81,84,0,   79,83,79,74,79,83,86,83,
+    72,76,79,76,72,76,79,84,   81,79,76,72,76,79,81,0,   77,79,81,84,81,79,77,72,   74,77,79,83,79,77,74,0
+  ];
+  var ROOTS = [48, 45, 41, 43, 48, 45, 41, 43];
+  function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function tone(type, freq, t, dur, vol) {
+    var c = music.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(music.master);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+  function kick(t) {
+    var c = music.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(140, t);
+    o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    g.gain.setValueAtTime(0.3, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g); g.connect(music.master);
+    o.start(t); o.stop(t + 0.18);
+  }
+  function hat(t) {
+    var c = music.ctx;
+    if (!music.noise) {
+      var len = Math.floor(c.sampleRate * 0.05), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      music.noise = buf;
+    }
+    var s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = music.noise; f.type = "highpass"; f.frequency.value = 7000;
+    g.gain.setValueAtTime(0.05, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    s.connect(f); f.connect(g); g.connect(music.master);
+    s.start(t);
+  }
+  function scheduleStep(i, t) {
+    var bar = Math.floor(i / 8), k = i % 8, root = ROOTS[bar];
+    if (MELODY[i]) tone("square", hz(MELODY[i]), t, EIGHTH * 0.9, 0.05);
+    if (k === 0 || k === 2 || k === 6) tone("triangle", hz(root), t, EIGHTH * 1.6, 0.18);
+    if (k === 4) tone("triangle", hz(root + 7), t, EIGHTH * 1.6, 0.15);
+    if (k === 0 || k === 4) kick(t);
+    if (k % 2 === 1) hat(t);
+  }
+  function tick() {
+    while (music.next < music.ctx.currentTime + 0.25) {
+      scheduleStep(music.step, music.next);
+      music.next += EIGHTH;
+      music.step = (music.step + 1) % MELODY.length;
+    }
+  }
+  function startMusic() {
+    if (!music.on) return;
+    try {
+      if (!music.ctx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        music.ctx = new AC();
+        music.master = music.ctx.createGain();
+        music.master.gain.value = 0.45;
+        music.master.connect(music.ctx.destination);
+      }
+      if (music.ctx.state === "suspended") music.ctx.resume();
+      music.started = true;
+      if (music.timer) return;
+      music.next = music.ctx.currentTime + 0.08;
+      music.timer = setInterval(tick, 60);
+    } catch (e) {}
+  }
+  function stopMusic() {
+    if (music.timer) { clearInterval(music.timer); music.timer = null; }
+    try { if (music.ctx && music.ctx.state === "running") music.ctx.suspend(); } catch (e) {}
+  }
+  function paintMusicBtn() {
+    var b = $("musicBtn");
+    b.setAttribute("aria-pressed", music.on ? "true" : "false");
+    b.setAttribute("aria-label", music.on ? "Turn music off" : "Turn music on");
+    $("icoOn").hidden = !music.on;
+    $("icoOff").hidden = music.on;
+  }
+  $("musicBtn").addEventListener("click", function () {
+    music.on = !music.on;
+    try { localStorage.setItem(MUSIC_KEY, music.on ? "on" : "off"); } catch (e) {}
+    paintMusicBtn();
+    if (music.on) startMusic(); else stopMusic();
+  });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) stopMusic();
+    else if (music.on && music.started) startMusic();
+  });
+  paintMusicBtn();
+
+  setupStart();
+})();
+</script>
+
+</body></html>
